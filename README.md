@@ -6,7 +6,8 @@ This folder processes and cleans the SRI dataset collected by HIAS Guyana from 2
   * 01_load_packages.R: loads necessary R packages
   * 02_functions.R: user-written functions
 * __01_data__
-  * [folder] raw: contains unedited KOBO files received directly from HIAS
+  * (not in repository) [folder] raw: contains unedited KOBO files received directly from HIAS
+  * (not in repository [folder] processed: contains processed Stata files
   * 03_load_data.R: loads data, with column names defined according to *column_translations.xlsx*
   * 04_clean_data.R: standardizes data, especially for SRI domain scoring
   * 05_recodes.R: performs a few recodes
