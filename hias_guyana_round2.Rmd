@@ -1,0 +1,405 @@
+---
+title: "HIAS Guyana Targeting and Follow-up"
+author: "Sam Hsu"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  word_document: default
+subtitle: SRI Data Overview
+header-includes: \usepackage{fancyhdr}
+---
+\addtolength{\headheight}{1cm}
+\pagestyle{fancyplain}
+\rhead{\includegraphics[height=1.2cm]{./03_output/sri_logo.png}}
+\renewcommand{\headrulewidth}{0pt}
+
+```{r options, include = F}
+knitr::opts_chunk$set(echo = F, warning = F)
+```
+
+```{r load R, include = F}
+source("00_R/01_load_packages.R")
+source("00_R/02_functions.R")
+```
+
+
+```{r load data, include = F}
+source("01_data/03_load_data.R")
+source("01_data/04_clean_data.R")
+```
+
+```{r digits}
+# change digits only for the report
+options(digits = 1)
+```
+
+## Introduction
+
+The Self-Reliance Index (SRI) is a scored survey tool for measuring the progress of refugee households toward self-reliance over time. It is primarily intended to support practitioners in designing and providing effective refugee services in countries of first asylum. It may also assist in targeting populations for assistance, highlighting service gaps, and informing funding priorities. The SRI was developed through a three-year multi-stakeholder process involving over 25 contributing partners, including NGOs, UNHCR, research entities, foundations, and government agencies. The SRI was developed to fill a critical gap in enhancing self-reliance opportunities for refugees by providing a quickly-administered, high-level assessment of key status changes for refugee households. It is expected to evolve and improve as it is increasingly used to support refugees throughout the world to rebuild their lives.
+
+This exploratory data review reports participant demographics and SRI domain scores for two waves of SRI data collected by HIAS in Guyana. Targeting assessments occurred between **`r min(data_targeting_clean$assessment_date)`** and **`r max(data_targeting_clean$assessment_date)`** and follow-ups occurred on **`r min(data_followup_clean$assessment_date)`**. There are **`r dim(data_targeting_clean)[1]`** respondents in the targeting phase and **`r dim(data_followup_clean)[1]`** in the follow-up phase.
+
+
+## Overview of Respondents
+
+#### Characteristics
+
+This section will report data from the targeting dataset.
+
+* **`r data_targeting_clean %>% count(nationality) %>% mutate(pct = (n / sum(n)) * 100)%>% filter(nationality == "Venezuelan") %>% select(pct) %>% .[[1]]`**% of respondents are of Venezuelan nationality. 
+* **`r data_targeting_clean %>% count(interview_language) %>% mutate(pct = (n / sum(n)) * 100)%>% filter(interview_language == "Spanish") %>% select(pct) %>% .[[1]]`**% of interviews were conducted in Spanish.  
+
+Respondents were asked what kind of documentation they had available.
+
+* **`r data_targeting_clean %>% count(doc_held_stay) %>% mutate(pct = (n / sum(n)) * 100)%>% filter(doc_held_stay == "Yes") %>% select(pct) %>% .[[1]]`**% of respondents hold a stay permit.
+* **`r data_targeting_clean %>% count(doc_held_id) %>% mutate(pct = (n / sum(n)) * 100)%>% filter(doc_held_id == "Yes") %>% select(pct) %>% .[[1]]`**% hold a Guyana ID card.
+* **`r data_targeting_clean %>% count(doc_held_birth) %>% mutate(pct = (n / sum(n)) * 100)%>% filter(doc_held_birth == "Yes") %>% select(pct) %>% .[[1]]`**% hold a Guyana birth certificate.
+
+Respondents were asked when they most recently arrived in the host country. The earliest date is **`r min(data_targeting_clean$arrival_date, na.rm = T)[1]`**. The latest date provided is **`r max(data_targeting_clean$arrival_date, na.rm = T)[1]`**.
+
+
+#### Demographics
+
+The dependency ratio is the number of children and elderly, divided by the number of working-age adults in a household. In the targeting household sample, the minimum household dependence ratio is **`r min(data_targeting_clean$dependency_ratio, na.rm = T)[1]`**, median value is **`r median(data_targeting_clean$dependency_ratio, na.rm = T)[1]`**, and the maximum value is **`r max(data_targeting_clean$dependency_ratio, na.rm = T)[1]`**.
+
+```{r dependency plot, fig.width=4, fig.height=2.5, fig.align = "center", echo = F, warning = F}
+dependency <- ggplot(data_targeting_clean, aes(x = dependency_ratio)) +
+  geom_histogram(binwidth = 0.5, color = "white", fill = "#569969") +
+  theme_bw() +
+  ggtitle("Distribution of Dependency Ratio") +  
+  xlab("Dependency Ratio")
+
+plot(dependency)
+```
+
+## Self-Reliance Index
+
+#### Domains
+
+The SRI is comprised of 12 domains, each of which are important for assessing self-reliance. Scores on individual domains may aid in making referrals for needed services or improving relevant sectoral
+responses. The aggregate household score signals the household’s overall level of self-reliance. Table 1 displays the change in each of the 12 domains from the targeting survey to the follow-up.
+
+```{r domain table, results = 'asis', echo = F, warning = F}
+# include only the necessary elements of our analysis and full analytic cases (no missing elements)
+data_targeting_complete <- data_targeting_clean %>% 
+  dplyr::select(domain1a, domain1b, domain2, domain3, domain4, domain5, domain6, domain7, domain8:domain8_work, domain9:domain9_o, domain10:domain10_invest, domain11, domain12a, domain12b, SRI) %>% 
+  filter(complete.cases(.))
+
+data_followup_complete <- data_followup_clean %>% 
+  dplyr::select(domain1a, domain1b, domain2, domain3, domain4, domain5, domain6, domain7, domain8:domain8_work, domain9:domain9_o, domain10:domain10_invest, domain11, domain12a, domain12b, SRI) %>% 
+  filter(complete.cases(.))
+
+# defines markup language for table display
+options(qwraps2_markup = "markdown")
+.n_perc0 <- hijack(n_perc0, na_rm = T, digits = 1, show_symbol = T)
+
+summary <- 
+  list("DOMAIN 1A: HOUSING" = 
+         list("No shelter (current)" = ~ .n_perc0(domain1a == 1),
+              "Makeshift shelter" = ~ .n_perc0(domain1a == 2),
+              "Temporarily hosted" = ~ .n_perc0(domain1a == 3),
+              "Inadequate apt/house" = ~ .n_perc0(domain1a == 4),
+              "Adequate apt/house" = ~ .n_perc0(domain1a == 5)),
+       "DOMAIN 1B: RENT (last 3 mo.)" = 
+         list("Couldn't pay 2-3 times" = ~ .n_perc0(domain1b == 1),
+              "Couldn't pay 1 time" = ~ .n_perc0(domain1b == 2),
+              "Could pay each month" = ~ .n_perc0(domain1b == 3),
+              "Not applicable" = ~ .n_perc0(domain1b == 4)),
+       "DOMAIN 2: FOOD (yesterday)" = 
+         list("Did not eat" = ~ .n_perc0(domain2 == 1),
+              "Not even a full meal" = ~ .n_perc0(domain2 == 2),
+              "1 full meal" = ~ .n_perc0(domain2 == 3),
+              "2-3 full meals" = ~ .n_perc0(domain2 == 4)),
+       "DOMAIN 3: EDUCATION (last 3 mo.)" = 
+         list("No children in school" = ~ .n_perc0(domain3 == 1),
+              "Some children in school" = ~ .n_perc0(domain3 == 2),
+              "All children in school" = ~ .n_perc0(domain3 == 3),
+              "Not applicable" = ~ .n_perc0(domain3 == 0)),
+       "DOMAIN 4: HEALTH CARE (last 3 mo.)" = 
+         list("Did not receive" = ~ .n_perc0(domain4 == 1),
+              "Received some needed" = ~ .n_perc0(domain4 == 2),
+              "Received all needed" = ~ .n_perc0(domain4 == 3),
+              "Not needed" = ~ .n_perc0(domain4 == 0)),
+       "DOMAIN 5: HEALTH STATUS (current)" = 
+         list("Adult has condition" = ~ .n_perc0(domain5 == 1),
+              "Dependent has condition" = ~ .n_perc0(domain5 == 2),
+              "None" = ~ .n_perc0(domain5 == 3)),
+       "DOMAIN 6: SAFETY" = 
+         list("Don't feel safe to pursue any" = ~ .n_perc0(domain6 == 1),
+              "Safe to pursue some" = ~ .n_perc0(domain6 == 2),
+              "Safe to pursue all" = ~ .n_perc0(domain6 == 3)),
+       "DOMAIN 7: EMPLOYMENT (last 3 mo.)" = 
+         list("No employment" = ~ .n_perc0(domain7 == 1),
+              "Temporary, irregular" = ~ .n_perc0(domain7 == 2),
+              "Regular part-time" = ~ .n_perc0(domain7 == 3),
+              "Regular full-time, no documents" = ~ .n_perc0(domain7 == 4),
+              "Regular full-time, w/documents" = ~ .n_perc0(domain7 == 5)),
+       "DOMAIN 8: FINANCIAL RESOURCES (last 3 mo.)" = 
+         list("Assistance" = ~ .n_perc0(domain8_assistance == "Yes"),
+              "Borrowing money" = ~ .n_perc0(domain8_borrow == "Yes"),
+              "Selling assets" = ~ .n_perc0(domain8_sell == "Yes"),
+              "Previous savings" = ~ .n_perc0(domain8_savings == "Yes"),
+              "Remittances/money from relatives/friends" = ~ .n_perc0(domain8_friends == "Yes"),
+              "Work" = ~ .n_perc0(domain8_work == "Yes")),
+       "DOMAIN 9: ASSISTANCE (last 3 mo.)" = 
+         list("No assistance" = ~ .n_perc0(domain9_no == "Yes"),
+              "Food" = ~ .n_perc0(domain9_food == "Yes"),
+              "Utilities/housing" = ~ .n_perc0(domain9_utilities == "Yes"),
+              "Healthcare" = ~ .n_perc0(domain9_healthcare == "Yes"),
+              "Other" = ~ .n_perc0(domain9_o == "Yes")),
+       "DOMAIN 10: DEBT" = 
+         list("No debt" = ~ .n_perc0(domain10_none == "Yes"),
+              "Food" = ~ .n_perc0(domain10_food == "Yes"),
+              "Utilities/housing" = ~ .n_perc0(domain10_utilities == "Yes"),
+              "Healthcare" = ~ .n_perc0(domain10_healthcare == "Yes"),
+              "Education" = ~ .n_perc0(domain10_educ == "Yes"),
+              "Transport" = ~ .n_perc0(domain10_transport == "Yes"),
+              "Investment" = ~ .n_perc0(domain10_invest == "Yes")),
+       "DOMAIN 11: SAVINGS" = 
+         list("No savings/sellable assets" = ~ .n_perc0(domain11 == 1),
+              "Not enough for 1 mo expenses" = ~ .n_perc0(domain11 == 2),
+              "Enough for 1 mo expenses" = ~ .n_perc0(domain11 == 3),
+              "1 mo expenses plus asset" = ~ .n_perc0(domain11 == 4)),
+       "DOMAIN 12a: FINANCIAL SOCIAL CAPITAL" = 
+         list("Knows no one who could lend" = ~ .n_perc0(domain12a == 1),
+              "Knows someone who could lend" = ~ .n_perc0(domain12a == 2)),
+       "DOMAIN 12b: RELATIONAL SOCIAL CAPITAL" = 
+         list("Neither" = ~ .n_perc0(domain12b == 0),
+              "HH members ask others only" = ~ .n_perc0(domain12b == 1),
+              "People ask HH members only" = ~ .n_perc0(domain12b == 2),
+              "Both" = ~ .n_perc0(domain12b == 3)) 
+  )
+
+table_targeting <- summary_table(data_targeting_complete, summary)
+table_followup <- summary_table(data_followup_complete, summary)
+
+table_domain <- cbind(table_targeting, table_followup)
+
+print(table_domain,
+      rtitle = "Table 1: SRI Domain Results",
+      cnames = c("Targeting survey (N = 58)",
+                 "Follow-up survey (N = 37)"))
+```
+
+There is a clear improvement in the conditions of the respondents from the targeting period to follow-up. This improvement appears consistent across all domains. Particularly notable is the increase in households relying on "work" to support basic needs (Domain 8) from **`r data_targeting_clean %>% count(domain8_work) %>% mutate(pct = (n / sum(n)) * 100) %>% filter(domain8_work == "Yes") %>% select(pct) %>% .[[1]]`**% at targeting to **`r data_followup_clean %>% count(domain8_work) %>% mutate(pct = (n / sum(n)) * 100) %>% filter(domain8_work == "Yes") %>% select(pct) %>% .[[1]]`**% at follow-up. Also, the percentage of households reporting "no debt" (Domain 10) increased from **`r data_targeting_clean %>% count(domain10_none) %>% mutate(pct = (n / sum(n)) * 100) %>% filter(domain10_none == "Yes") %>% select(pct) %>% .[[1]]`** at targeting to **`r data_followup_clean %>% count(domain10_none) %>% mutate(pct = (n / sum(n)) * 100) %>% filter(domain10_none == "Yes") %>% select(pct) %>% .[[1]]`** at follow-up.
+
+#### Overall SRI Score
+
+The associated SRI score increases significantly from targeting to follow-up.
+
+```{r SRI table, results = 'asis', echo = F, warning = F}
+sri_summary <-
+  list("SRI Score" =
+         list(
+           "Minimum" = ~ min(SRI),
+           "Mean (SD)" = ~ mean_sd(SRI, denote_sd = "paren"),
+           "Maximum" = ~ max(SRI)
+         ))
+
+sri_table_targeting <-
+  summary_table(data_targeting_complete, sri_summary)
+sri_table_followup <-
+  summary_table(data_followup_complete, sri_summary)
+
+table_sri <- cbind(sri_table_targeting, sri_table_followup)
+
+print(
+  table_sri,
+  rtitle = "Table 2: SRI Score Results",
+  cnames = c("Targeting survey (N = 58)",
+             "Follow-up survey (N = 37)")
+)
+```
+
+Every respondent measured at both time points, except for one, increased their SRI score from the targeting survey to the follow-up survey. In the below figure, this exception (**GY-2021-038**) is highlighted in red. The two respondents an SRI score increase above two points (**GY-2021-022** and **GY-2021-040**) are highlighted in green.
+
+```{r sri comparison, fig.width=6, fig.height=3.5, fig.align = "center", echo = F, warning = F}
+sri_comp <- data_round2 %>%
+  filter(!is.na(SRI_targ) & !is.na(SRI_fol)) %>% 
+  select(id, SRI_targ, SRI_fol) %>%
+  
+  # the melt function transforms data from "wide" to "long"
+  melt(id = c("id")) %>% 
+  mutate(id = factor(id)) %>% 
+  group_by(id)
+
+sri_comp_plot <- ggplot(data = subset(sri_comp, !(id %in% c("GY-2021-038", "GY-2021-022", "GY-2021-040"))),
+       aes(x = variable, y = value, group = id)) +
+  geom_point(alpha = 0.3) +
+  geom_line(alpha = 0.15) + 
+  geom_point(data = subset(sri_comp, id == "GY-2021-038"), color = "#DD4444") +
+  geom_line(data = subset(sri_comp, id == "GY-2021-038"), color = "#DD4444") +
+  geom_point(data = subset(sri_comp, id %in% c("GY-2021-022", "GY-2021-040")), color = "#279653") +
+  geom_line(data = subset(sri_comp, id %in% c("GY-2021-022", "GY-2021-040")), color = "#279653") +
+  theme_bw() +
+  xlab("Time of Evaluation") +
+  ylab("SRI Score") +
+  scale_x_discrete(labels = c("Targeting", "Follow-up")) +
+  ggtitle("SRI Comparison, Targeting and Follow-up")
+
+sri_comp_plot
+```
+
+
+#### A caution about attrition
+
+Although the results in the previous section are encouraging, it must be noted that of the **`r data_round2 %>% count(is.na(SRI_targ)) %>% .[1, ] %>% select(n) %>% .[[1]]`** respondents surveyed in the targeting round, only **`r data_round2 %>% count(!is.na(SRI_targ) & !is.na(SRI_fol)) %>% .[2, ] %>% select(n) %>% .[[1]]`** of these were interviewed for the follow-up round. (**`r data_round2 %>% count(is.na(SRI_targ) & !is.na(SRI_fol)) %>% .[2, ] %>% select(n) %>% .[[1]]`** respondents were interviewed __only__ during the follow-up round.)
+
+This would not be a problem if these respondents were missing at random. But it is possible that their inability to be reached for follow-up is associated with the SRI domains of interest. For example, suppose that the households who were not measured at follow-up were those who did not have a permanent dwelling or employment and were thus harder to find at follow-up. Because the missing respondents would have lower SRI domain scores on average, the true effect of the HIAS program activities would not be as impressive as the results in Table 2 suggest.
+
+Table 3 presents a comparison of the targeting SRI scores and other potentially relevant variables for respondents who were successfully followed up with, against those who did not receive a follow-up interview.
+
+```{r attrition comparison, results = 'asis', echo = F, warning = F}
+# creates a data frame with only non-missing target respondents and whether they have a followup
+sri_attrition_status <- data_round2 %>% 
+  filter(!is.na(SRI_targ)) %>% 
+  select(id, SRI_targ, SRI_fol) %>% 
+  mutate(is_followup = if_else(!is.na(SRI_targ) & !is.na(SRI_fol), TRUE, FALSE))
+
+sri_attrition <- data_targeting_clean %>% 
+  right_join(sri_attrition_status, by = "id")
+
+sri_attrit_w_followup <- sri_attrition %>% 
+  filter(is_followup == TRUE)
+sri_attrit_no_followup <- sri_attrition %>% 
+  filter(is_followup == FALSE)
+
+attrit_summary <-
+  list("SRI SCORE" =
+         list("Minimum" = ~ min(SRI),
+              "Mean (SD)" = ~ mean_sd(SRI, denote_sd = "paren"),
+              "Maximum" = ~ max(SRI)),
+       "DEPENDENCY RATIO" =
+         list("Minimum" = ~ min(dependency_ratio),
+              "Mean (SD)" = ~ mean_sd(dependency_ratio, denote_sd = "paren"),
+              "Maximum" = ~ max(dependency_ratio)),
+       "LENGTH IN NEW COUNTRY" =
+         list("Less than one year" = ~ .n_perc0(time_in_country == "< 1 year"),
+              "One to three years" = ~ .n_perc0(time_in_country == "1 - 3 years"),
+              "Three to five years" = ~ .n_perc0(time_in_country == "3 - 5 years")),
+       "DOCUMENTATION HELD" = 
+         list("Stay permit" = ~ .n_perc0(doc_held_stay == "Yes"),
+              "Guyana ID card" = ~ .n_perc0(doc_held_id == "Yes"),
+              "UNHCR PRIMES" = ~ .n_perc0(doc_held_unhcr == "Yes"),
+              "Guyana Birth Cert" = ~ .n_perc0(doc_held_birth == "Yes"),
+              "Other/NA" = ~ .n_perc0(doc_held_other == "Yes"))
+       ) %>% 
+  setNames(
+    c(
+      paste("SRI SCORE: ", frmtp(sri_attrition %>% t_test(formula = SRI_targ ~ is_followup) %>% .$p_value)),
+      paste("DEPENDENCY RATIO: ", frmtp(sri_attrition %>% t_test(formula = dependency_ratio ~ is_followup) %>% .$p_value)),
+      paste("LENGTH IN NEW COUNTRY: ",
+            frmtp(fisher.test(xtabs( ~ time_in_country + is_followup, data = sri_attrition))$p.value)),
+      paste("DOCUMENTATION HELD")
+    )
+  )
+
+attrit_table_w_followup <-
+  summary_table(sri_attrit_w_followup, attrit_summary)
+attrit_table_no_followup <-
+  summary_table(sri_attrit_no_followup, attrit_summary)
+
+table_attrit <- cbind(attrit_table_w_followup, attrit_table_no_followup)
+
+print(
+  table_attrit,
+  rtitle = "Table 3: Treatment SRI and Other Indicators, by Attrition Status",
+  cnames = c("Followed Up (N = 35)",
+             "Not Followed Up (N = 25)")
+)
+```
+
+In terms of observable characteristics, including targeting SRI score, the respondents who were interviewed at follow-up are not significantly different from those that were not. As discussed above, this is important in establishing that the results in Table 2 are not simply due to bias in attrition.
+
+## Associations
+
+Some respondent characteristics should be associated with SRI score. For example, if a household has a higher dependency ratio, their SRI score could be hypothesized to be lower. The below analysis examines dependency ratio and time in country for the targeting survey.
+
+#### Dependency Ratio
+
+There is a negative association between dependency ratio and SRI score in the targeting survey. In other words, households with a larger number of children and seniors for each working-age adult have lower SRI scores, on average.
+
+```{r dependency ratio association, fig.width=4, fig.height=2.5, fig.align = "center", message = F, echo = F, warning = F, fig.show='hide', results='hide'}
+dependency_plot <- ggplot(data_targeting_clean, aes(x = dependency_ratio, y = SRI)) +
+  geom_point(alpha = 0.8) +
+  theme_bw() +
+  ggtitle("Association between dependency and SRI") +  
+  xlab("Dependency Ratio") +
+  ylab("SRI Score")
+
+dependency_plot
+
+dependency_model <- lm(SRI ~ dependency_ratio, data = data_targeting_clean)
+tbl_regression(dependency_model)
+```
+
+However, note that there is no statistically significant association between dependency ratio and __change__ in SRI from targeting to follow-up.
+
+```{r dependency ratio association 2, fig.width=4, fig.height=2.5, fig.align = "center", message = F, echo = F, warning = F, fig.show='hide', results='hide'}
+dependency_dsri_plot <- ggplot(data_round2, aes(x = dependency_ratio_targ, y = SRI_fol - SRI_targ)) +
+  geom_point(alpha = 0.8) +
+  theme_bw() +
+  ggtitle("Assoc. between dependency and change in SRI") +  
+  xlab("Dependency Ratio") +
+  ylab("Change in SRI Score")
+
+dependency_dsri_plot
+```
+
+#### Time in Country
+
+On the other hand, time in country is not statistically significantly associated with SRI score.
+
+```{r time country association, fig.width=4, fig.height=2.5, fig.align = "center", message = F, echo = F, warning = F, fig.show='hide', results='hide'}
+time_plot <- ggplot(data_targeting_clean, aes(x = arrival_date, y = SRI)) +
+  geom_point(alpha = 0.8) +
+  theme_bw() +
+  ggtitle("Association between arrival date and SRI") +  
+  xlab("Arrival Date") +
+  ylab("SRI Score")
+
+time_plot
+
+#data_time <- data_targeting_clean %>% 
+#  select(id, SRI, arrival_date) %>% 
+#  mutate(arrival_date = as.double(difftime(min(data_targeting_clean$arrival_date), arrival_date),
+#                                  units = "days"))
+
+time_model <- lm(SRI ~ arrival_date, data = data_targeting_clean)
+tbl_regression(time_model)
+```
+
+## Data Consistency
+
+Several of the domains in the SRI survey are closely related to each other. For example, Domain 7 asks about employment, and Domain 8 about financial resources. However, the SRI instrument is implemented without skip logic. That is, response options are not restricted even if an earlier response would make that response inconsistent. 
+
+This allows the survey administrator to check if the survey is being administered correctly, or if there are questions that the respondent does not understand. In the below data consistency checks, violations indicate that the response should be checked in the data. In the future, further guidance should be given to the interviewer and respondent.
+
+If the response to Domain 1a is "no shelter" or "homeless shelter", responses to Domain 1b should not include unable to pay rent 2-3 times or 1 time.
+
+* **`r data_targeting_clean %>% filter(domain1a %in% c(1, 2)) %>% count(domain1b) %>% filter(domain1b %in% c(1, 2)) %>% select(n) %>% .[[1]]`** targeting survey consistency check passed.
+* **`r data_followup_clean %>% filter(domain1a %in% c(1, 2)) %>% count(domain1b) %>% filter(domain1b %in% c(1, 2)) %>% select(n) %>% .[[1]]`** follow-up survey consistency check passed.
+
+If the response to number of children is greater than 0, the response to Domain 3 should probably not be NA (but not necessarily, if children are under school-age).
+
+* **`r data_targeting_clean %>% filter(n_children > 0) %>% count(domain3) %>% filter(domain3 == 0) %>% select(n) %>% .[[1]]`** responses in the targeting survey violate this consistency check.
+* **`r data_followup_clean %>% filter(n_children > 0) %>% count(domain3) %>% filter(domain3 == 0) %>% select(n) %>% .[[1]]`** responses in the follow-up survey violate this consistency check.
+
+If the response to Domain 7 is "no employment", responses to Domain 8 should not include "work".
+
+* **`r data_targeting_clean %>% filter(domain7 == 1) %>% count(domain8_work) %>% filter(domain8_work == "Yes") %>% select(n) %>% .[[1]]`** responses in the targeting survey violate this consistency check.
+* **`r data_followup_clean %>% filter(domain7 == 1) %>% count(domain8_work) %>% filter(domain8_work == "Yes") %>% select(n) %>% .[[1]]`** follow-up survey consistency check passed.
+
+If the response to Domain 7 is "regular part-time", or "full-time" (with or without legal documentation), responses to Domain 8 should include "work".
+
+* **`r data_targeting_clean %>% filter(domain7 %in% c(3,4,5)) %>% count(domain8_work) %>% filter(domain8_work == "No") %>% select(n) %>% .[[1]]`** responses in the targeting survey violate this consistency check.
+* **`r data_followup_clean %>% filter(domain7 %in% c(3,4,5)) %>% count(domain8_work) %>% filter(domain8_work == "No") %>% select(n) %>% .[[1]]`** follow-up survey consistency check passed.
+
+If the response to Domain 8 includes "assistance", the response to Domain 9 should not be "no assistance".
+
+* **`r data_targeting_clean %>% filter(domain8_assistance == "Yes") %>% count(domain9_no) %>% filter(domain9_no == "Yes") %>% select(n) %>% .[[1]]`** responses in the targeting survey violate this consistency check.
+* **`r data_followup_clean %>% filter(domain8_assistance == "Yes") %>% count(domain9_no) %>% filter(domain9_no == "Yes") %>% select(n) %>% .[[1]]`** follow-up survey consistency check passed.
+
+Another concern is that at least some fields that should be computed were entered manually. For respondent id GY-2021-023, the number of dependents was entered as 22, though there were only 2 children and 0 seniors reported in the household.
