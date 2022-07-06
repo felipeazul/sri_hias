@@ -1,9 +1,17 @@
 
 rm(list = ls())
 
+# Packages
 library(tidyverse)
 library(readxl)
 library(janitor)
+library(showtext)
+library(ggdist)
+
+# Fonts
+font_add_google(name = "Open Sans", family = "Open Sans")
+font_add_google(name = "Roboto Mono", family = "Roboto Mono")
+showtext_auto()
 
 # Load data
 prm_raw <- read_excel("./01_data/raw/sri_prm_ecuador.xlsx")
@@ -111,10 +119,10 @@ sri_data <- bind_rows(
 sri_data_clean <- sri_data %>%
   mutate(
     # Convert all variables to lower case
-    across(
-      .cols = everything(),
-      .fns = tolower
-    ),
+#    across(
+#      .cols = everything(),
+#      .fns = tolower
+#    ),
     # Convert most text variables to factors
     across(
       .cols = c(project, genero_del_evaluador:interview_language, program_type),
@@ -126,5 +134,29 @@ sri_data_clean <- sri_data %>%
       .fns = as.numeric
     ))
 
+sri_data_clean %>%
+  ggplot(aes(x = fecha_de_la_evaluacion, y = hh_sri_total_score)) +
+  geom_point(aes(color = project), alpha = .5) +
+  geom_line(aes(group = codigo), alpha = .1) +
+  theme_minimal(base_size = 18, base_family = "Open Sans") +
+  theme(
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+#    legend.position = "none",
+    axis.title = element_text(size = 12),
+    axis.text = element_text(family = "Roboto Mono", size = 10),
+#    axis.text.y = element_blank(),
+    plot.caption = element_text(size = 9, color = "gray50"),
+    panel.grid.minor.x = element_blank(),
+    plot.background = element_rect(fill = "grey97", color = NA),
+  )
 
+sri_data_clean %>%
+  ggplot(aes(x = hh_sri_total_score, fill = project)) +
+  stat_halfeye() +
+  facet_wrap(~project) +
+  theme_minimal()
 
+teams <- c("Everton", "Southampton", "Arsenal", "Wolves", "Brighton")
+goals <- round(rnorm(20, mean = 10, sd = 3))
+order <- seq(1:20)
+data <- tibble(teams, goals, order)
