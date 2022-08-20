@@ -14,6 +14,8 @@ data_targeting <- xl.read.file(filename = "./01_data/raw/SRI Data Guyana Dec 202
                                xl.sheet = "1. targeting",
                                password = pw)
 
+# USE READ_EXCEL FOR THESE IMPORTS?
+
 data_followup <- xl.read.file(filename = "./01_data/raw/SRI Data Guyana Dec 2021 KOBO report.xlsx",
                               xl.sheet = "2. follow-up",
                               password = pw)

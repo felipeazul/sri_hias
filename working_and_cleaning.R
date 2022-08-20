@@ -45,7 +45,8 @@ prm_clean <- prm_raw %>%
          adults = composicion_del_hogar_cuantos_adultos_hay_en_el_hogar,
          time_in_country = cuanto_tiempo_lleva_viviendo_aqui,
          date_of_arrival = fecha_de_llegada_mas_reciente_al_pais_de_acogida,
-         contains("_score"), -la_puntuacion_del_hogar_en_el_sri_es_hh_sri_total_score)
+         contains("_score"), -la_puntuacion_del_hogar_en_el_sri_es_hh_sri_total_score,
+         uuid)
 
 hilton_clean <- hilton_raw %>%
   clean_names() %>%
@@ -65,7 +66,8 @@ hilton_clean <- hilton_raw %>%
          adults = composicion_del_hogar_cuantos_adultos_hay_en_el_hogar,
          time_in_country = cuanto_tiempo_lleva_viviendo_aqui,
          date_of_arrival = fecha_de_llegada_mas_reciente_al_pais_de_acogida,
-         contains("_score"), -la_puntuacion_del_hogar_en_el_sri_es_hh_sri_total_score)
+         contains("_score"), -la_puntuacion_del_hogar_en_el_sri_es_hh_sri_total_score,
+         uuid)
 
 caminando_clean <- caminando_raw %>%
   clean_names() %>%
@@ -85,7 +87,8 @@ caminando_clean <- caminando_raw %>%
          adults = composicion_del_hogar_cuantos_adultos_hay_en_el_hogar,
          time_in_country = cuanto_tiempo_lleva_viviendo_aqui,
          date_of_arrival = fecha_de_llegada_mas_reciente_al_pais_de_acogida,
-         contains("_score"), -la_puntuacion_del_hogar_en_el_sri_es_hh_sri_total_score)
+         contains("_score"), -la_puntuacion_del_hogar_en_el_sri_es_hh_sri_total_score,
+         uuid)
 
 integra_clean <- integra_raw %>%
   clean_names() %>%
@@ -105,7 +108,8 @@ integra_clean <- integra_raw %>%
          adults = composicion_del_hogar_cuantos_adultos_hay_en_el_hogar,
          time_in_country = cuanto_tiempo_lleva_viviendo_aqui,
          date_of_arrival = fecha_de_llegada_mas_reciente_al_pais_de_acogida,
-         contains("_score"), -la_puntuacion_del_hogar_en_el_sri_es_hh_sri_total_score)
+         contains("_score"), -la_puntuacion_del_hogar_en_el_sri_es_hh_sri_total_score,
+         uuid)
 
 # Merge cleaned data into one dataset
 sri_data <- bind_rows(
@@ -118,7 +122,7 @@ sri_data <- bind_rows(
 
 sri_data_clean <- sri_data %>%
   mutate(
-    # Convert all variables to lower case
+# Convert all variables to lower case  #### This code messes up the date fields
 #    across(
 #      .cols = everything(),
 #      .fns = tolower
@@ -132,9 +136,78 @@ sri_data_clean <- sri_data %>%
     across(
       .cols = c(d1a_housing_score:hh_sri_total_score),
       .fns = as.numeric
-    ))
+    )) %>%
+  mutate(
+    time_in_country = str_replace(time_in_country, "año", "Year"),
+    time_in_country = na_if(time_in_country, "No Aplica")
+  )
 
-sri_data_clean %>%
+# Deal with duplicates and wrong IDs
+splits <- c("0738d58c-22c0-4a92-9922-d4cdf3e23816",
+            "2f641a67-8647-47bd-9b4e-d9b2b6d8a2a4",
+            "4fa5bac3-340e-4bbe-8d66-5ba504fa20d1",
+            "1865ebf6-146e-45d5-8327-8b9aaef430e1",
+            "0dd46466-1dfb-41b8-9deb-8dfa994d504d")
+
+replacements <- tibble(c("rep_1", "rep_2", "rep_3", "rep_4", "rep_5"))
+
+to_remove <- c("c7988739-c277-4f6e-bc16-9b1c33137c17",
+               "fc2f54ce-ad43-4020-a58c-d18d27469353",
+               "3bdb2279-7df9-4c9a-b861-024d109773a2",
+               "1f3d4201-200a-491a-b6e7-d7ff13314a91",
+               "d7e5dc4c-7aae-48dd-a0b3-245a89880593",
+               "782efb12-f9bc-4c67-b7a6-9d9f52638a10",
+               "fcc77193-ee90-460d-92bf-3bafe872680e",
+               "39e27af6-1b22-4877-a9c8-372fa9f5246f",
+               "a8905c3a-9953-4e2f-ab56-2cbb09c31b71",
+               "4ef3cc92-2c38-4e30-a000-38a3d61112a9",
+               "a8dc1068-5ff5-4f6a-b7ad-4aee65f6453f",
+               "d26bd181-5773-40bd-8d0e-6b9ebcd16e6c",
+               "91850753-e956-4b6c-9bdc-cc6c4b8ac5ac",
+               "b4eaf0c1-76d0-4835-8dd6-5724e79c32f2",
+               "471d6a2d-66b1-4a70-afa5-e0cde8c68d0c",
+               "6c832b01-36ea-469f-9f67-ecde19602d83",
+               "8983e53c-912d-4a1f-ae1d-3b81ad823882",
+               "c6c7b6a8-3be4-4ceb-b972-3278dc9ba305",
+               "7daa6395-3bdb-48ee-bcbb-d126d78383dd",
+               "df2599a4-74f2-467d-ac65-cddb9abf9e41",
+               "3b6e7b62-a6a9-49f7-8ccf-6b6f0e4600e6")
+
+sri_data_clean <- sri_data_clean %>%
+  filter(!(uuid %in% to_remove))
+sri_data_clean[sri_data_clean$uuid %in% splits, "codigo"] <- replacements
+
+sri_count <- sri_data_clean %>%
+  arrange(fecha_de_la_evaluacion) %>%
+  group_by(codigo) %>%
+  mutate(count = n()) %>%
+  mutate(position = which(codigo == codigo)) %>%
+  ungroup() %>%
+  arrange(codigo, fecha_de_la_evaluacion) %>%
+  mutate(measure_prop = position / count)
+
+
+
+ids_twos <- sri_count %>%
+  filter(count == 2) %>%
+  select(codigo, position, fecha_de_la_evaluacion) %>%
+  pivot_wider(names_from = position, values_from = fecha_de_la_evaluacion) %>%
+  mutate(days_diff = as.numeric(`2` - `1`) / 60 / 60 / 24) %>%
+  filter(days_diff < 60) %>%
+  pull(codigo)
+
+issues <- c("EC-0045255", "EC-0047632", "EC-0083024", "EC-0090595",
+            "EC-0091882","EC-0092443", "Integra196", "Integra470", "Integra156",
+            ids_twos)
+
+
+sri_count %>%
+  arrange(codigo, fecha_de_la_evaluacion) %>%
+  filter(codigo %in% issues) %>%
+  write_csv("ec_output.csv")
+
+
+sri_count %>%
   ggplot(aes(x = fecha_de_la_evaluacion, y = hh_sri_total_score)) +
   geom_point(aes(color = project), alpha = .5) +
   geom_line(aes(group = codigo), alpha = .1) +
@@ -150,13 +223,54 @@ sri_data_clean %>%
     plot.background = element_rect(fill = "grey97", color = NA),
   )
 
-sri_data_clean %>%
+sri_count %>%
   ggplot(aes(x = hh_sri_total_score, fill = project)) +
   stat_halfeye() +
   facet_wrap(~project) +
   theme_minimal()
 
-teams <- c("Everton", "Southampton", "Arsenal", "Wolves", "Brighton")
-goals <- round(rnorm(20, mean = 10, sd = 3))
-order <- seq(1:20)
-data <- tibble(teams, goals, order)
+sri_count %>%
+  filter(count == 2) %>%
+  group_by(position) %>%
+  summarise(
+    mean(hh_sri_total_score),
+    n()
+  )
+
+
+sri_count %>%
+  ggplot(aes(
+    x = factor(position),
+    y = hh_sri_total_score
+    )) +
+  geom_point(
+    aes(color = factor(position)),
+    alpha = .3
+  ) +
+  geom_line(aes(group = codigo), alpha = .1)
+
+
+first_and_last <- sri_count %>%
+  filter(
+    count > 1,
+    measure_prop == .25 | measure_prop == 1/3 | measure_prop == 1 | position == 1
+  )
+
+post_tests <- first_and_last %>%
+  filter(position != 1) %>%
+  select(codigo, fecha_post = fecha_de_la_evaluacion,
+         sri_post = hh_sri_total_score)
+
+sri_wide <- first_and_last %>%
+  filter(position == 1) %>%
+  left_join(post_tests, by = "codigo") %>%
+  mutate(
+    time_period = as.numeric(fecha_post - fecha_de_la_evaluacion),
+    sri_change = sri_post - hh_sri_total_score
+  )
+
+mod <- lm(sri_change ~ hh_sri_total_score + gender + project + nacionalidad +
+          time_in_country + time_period,
+          data = sri_wide) %>%
+  broom::tidy()
+
