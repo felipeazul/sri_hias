@@ -140,6 +140,80 @@ sri_data_clean <- sri_data %>%
   mutate(
     time_in_country = str_replace(time_in_country, "año", "Year"),
     time_in_country = na_if(time_in_country, "No Aplica")
+  ) %>%
+  mutate(
+    nombre_del_evaluador = tolower(nombre_del_evaluador),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "alexandra lópez", "alexandra lopez"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "amelia bone oritz", "amelia bone"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "amelia bone ortiz", "amelia bone"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "amelia del rocio bone ortiz", "amelia bone"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "andreina mercedes sevillano molina", "andreina sevillano"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "andreina sevillano molian", "andreina sevillano"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "andreina sevillano molina", "andreina sevillano"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "arelis meza villacis", "arelis meza"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "james fabricio cueva correa", "fabricio cueva"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "fabricio cuevas", "fabricio cueva"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "gabricio cueva", "fabricio cueva"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "gabriel soto", "gabriela soto"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "héctor bravo mendoza", "hector bravo mendoza"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "johana quinalisa", "johana quinaluisa"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "johana quinaluisa.", "johana quinaluisa"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "john david ycaza porras", "john ycaza"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "john ycaza p.", "john ycaza"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "john ycaza porras", "john ycaza"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "john ycaza p", "john ycaza"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "john ycazarras", "john ycaza"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "juan jose romero garcía", "juan jose romero"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "juan josé romero garcía", "juan jose romero"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "juan jose romero gracia", "juan jose romero"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "juan jose romero garcia", "juan jose romero"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "juan josé romero", "juan jose romero"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "katerie alexandra lopez yépez", "katerine alexandra lopez yepez"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "katerine alexandra lóopez yépez", "katerine alexandra lopez yepez"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "katerine alexandra lopez yépez", "katerine alexandra lopez yepez"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "lorena iñguez", "lorena iniguez"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "lorena iñigue z", "lorena iniguez"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "lorena iñiguez brito", "lorena iniguez"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "lorena iñiguez", "lorena iniguez"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "lorena iñiguz", "lorena iniguez"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "lorena iñiiguez", "lorena iniguez"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "marcia lorena iniquez", "lorena iniguez"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "maría  esther gonzález jácome", "maria esther gonzalez"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "maria esther gonzález jácome", "maria esther gonzalez"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "maria esther gonzalez jácome", "maria esther gonzalez"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "maria esther gonzalez jacome", "maria esther gonzalez"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "maría esther gonzalez", "maria esther gonzalez"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "maría isabel vinueza rivera", "maria luisa vinueza"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "maria isabel vinueza rivera", "maria luisa vinueza"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "maria isabel vinueza", "maria luisa vinueza"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "maría isabel vinueza", "maria luisa vinueza"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "mariuxi carranza intriago", "mariuxi carranza"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "mariuixi carranza", "mariuxi carranza"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "mariuxo carranza", "mariuxi carranza"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "mariuxi monserrate carranza intriago", "mariuxi carranza"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "mariuxi monserrate", "mariuxi carranza"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "marlene guallasamin ñacato", "marlene guallasamin"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "marlene guallasmin ñacato", "marlene guallasamin"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "mayra samaniego tello", "mayra samaniego"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "mayra samanniego tello", "mayra samaniego"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "mayra violeta samaniego tello", "mayra samaniego"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "mishell yánez", "mishell yanez"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "olivia  nazareno", "olivia nazareno"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "nazareno olivia", "olivia nazareno"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "pamela véliz ibarra", "pamela veliz"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "pamela vèliz", "pamela veliz"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "patricio jácome", "patricio jacome"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "raúl enrique calderón mero", "raul enrique calderon mero"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "raúl calderón mero", "raul enrique calderon mero"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "saskia lorena silva helguer0", "saskia lorena silva helguero"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "wemndy nazareno", "wendy nazareno"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "wendy nazarenno", "wendy nazareno"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "sánchez", "sanchez"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "véliz", "veliz"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "jácome", "jacome"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "ramón", "ramon"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "briceño ordóñez", "briceno ordonez"),
+    nombre_del_evaluador = str_replace(nombre_del_evaluador, "pazmiño", "pazmino")
   )
 
 # Deal with duplicates and wrong IDs
@@ -249,7 +323,7 @@ sri_count %>%
   ) +
   geom_line(aes(group = codigo), alpha = .1)
 
-
+# Create wide dataset
 first_and_last <- sri_count %>%
   filter(
     count > 1,
@@ -269,8 +343,15 @@ sri_wide <- first_and_last %>%
     sri_change = sri_post - hh_sri_total_score
   )
 
-mod <- lm(sri_change ~ hh_sri_total_score + gender + project + nacionalidad +
-          time_in_country + time_period,
-          data = sri_wide) %>%
-  broom::tidy()
+write_csv(sri_count, "sri_count.csv")
+write_csv(sri_wide, "sri_wide.csv")
 
+# Regression on wide data
+mod <- lm(
+  sri_change ~ hh_sri_total_score + nacionalidad + time_period + # project?
+  nombre_del_evaluador,
+  data = sri_wide
+  )
+
+mod %>% broom::tidy() %>% print(n = 43)
+mod %>% broom::glance()
