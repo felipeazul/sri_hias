@@ -4,6 +4,7 @@ rm(list = ls())
 # Packages
 library(tidyverse)
 library(readxl)
+library(lubridate)
 library(janitor)
 library(showtext)
 library(ggdist)
@@ -214,7 +215,14 @@ sri_data_clean <- sri_data %>%
     nombre_del_evaluador = str_replace(nombre_del_evaluador, "ramón", "ramon"),
     nombre_del_evaluador = str_replace(nombre_del_evaluador, "briceño ordóñez", "briceno ordonez"),
     nombre_del_evaluador = str_replace(nombre_del_evaluador, "pazmiño", "pazmino")
+  ) %>%
+  rename(fecha_encuesta = fecha_de_la_evaluacion) %>%
+  mutate(
+    codigo = tolower(codigo),
+    codigo = str_remove(codigo, "-"),
+    codigo = str_remove(codigo, " ")
   )
+  
 
 # Deal with duplicates and wrong IDs
 splits <- c("0738d58c-22c0-4a92-9922-d4cdf3e23816",
@@ -252,20 +260,24 @@ sri_data_clean <- sri_data_clean %>%
 sri_data_clean[sri_data_clean$uuid %in% splits, "codigo"] <- replacements
 
 sri_count <- sri_data_clean %>%
-  arrange(fecha_de_la_evaluacion) %>%
+  arrange(fecha_encuesta) %>%
   group_by(codigo) %>%
   mutate(count = n()) %>%
   mutate(position = which(codigo == codigo)) %>%
+  mutate(days_since_pre = as.numeric(fecha_encuesta - min(fecha_encuesta)) / 60 / 60 / 24) %>%
   ungroup() %>%
-  arrange(codigo, fecha_de_la_evaluacion) %>%
-  mutate(measure_prop = position / count)
+  arrange(codigo, fecha_encuesta) %>%
+  mutate(
+    measure_prop = position / count,
+    in_program = count > 1
+  )
 
 
 
 ids_twos <- sri_count %>%
   filter(count == 2) %>%
-  select(codigo, position, fecha_de_la_evaluacion) %>%
-  pivot_wider(names_from = position, values_from = fecha_de_la_evaluacion) %>%
+  select(codigo, position, fecha_encuesta) %>%
+  pivot_wider(names_from = position, values_from = fecha_encuesta) %>%
   mutate(days_diff = as.numeric(`2` - `1`) / 60 / 60 / 24) %>%
   filter(days_diff < 60) %>%
   pull(codigo)
@@ -276,13 +288,13 @@ issues <- c("EC-0045255", "EC-0047632", "EC-0083024", "EC-0090595",
 
 
 sri_count %>%
-  arrange(codigo, fecha_de_la_evaluacion) %>%
+  arrange(codigo, fecha_encuesta) %>%
   filter(codigo %in% issues) %>%
   write_csv("ec_output.csv")
 
 
 sri_count %>%
-  ggplot(aes(x = fecha_de_la_evaluacion, y = hh_sri_total_score)) +
+  ggplot(aes(x = fecha_encuesta, y = hh_sri_total_score)) +
   geom_point(aes(color = project), alpha = .5) +
   geom_line(aes(group = codigo), alpha = .1) +
   theme_minimal(base_size = 18, base_family = "Open Sans") +
@@ -332,14 +344,14 @@ first_and_last <- sri_count %>%
 
 post_tests <- first_and_last %>%
   filter(position != 1) %>%
-  select(codigo, fecha_post = fecha_de_la_evaluacion,
+  select(codigo, fecha_post = fecha_encuesta,
          sri_post = hh_sri_total_score)
 
 sri_wide <- first_and_last %>%
   filter(position == 1) %>%
   left_join(post_tests, by = "codigo") %>%
   mutate(
-    time_period = as.numeric(fecha_post - fecha_de_la_evaluacion),
+    time_period = as.numeric(fecha_post - fecha_encuesta),
     sri_change = sri_post - hh_sri_total_score
   )
 
