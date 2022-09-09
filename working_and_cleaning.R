@@ -1,7 +1,7 @@
 
 rm(list = ls())
 
-# Packages
+# Load packages
 library(tidyverse)
 library(readxl)
 library(lubridate)
@@ -14,7 +14,7 @@ font_add_google(name = "Open Sans", family = "Open Sans")
 font_add_google(name = "Roboto Mono", family = "Roboto Mono")
 showtext_auto()
 
-# Load data
+# Load raw data
 prm_raw <- read_excel("./01_data/raw/sri_prm_ecuador.xlsx")
 hilton_raw <- read_excel("./01_data/raw/sri_hilton_ecuador.xlsx")
 caminando_raw <- read_excel("./01_data/raw/sri_caminando_ecuador.xlsx")
@@ -121,13 +121,9 @@ sri_data <- bind_rows(
   .id = "project"
 )
 
+# Clean merged dataset
 sri_data_clean <- sri_data %>%
   mutate(
-# Convert all variables to lower case  #### This code messes up the date fields
-#    across(
-#      .cols = everything(),
-#      .fns = tolower
-#    ),
     # Convert most text variables to factors
     across(
       .cols = c(project, genero_del_evaluador:interview_language, program_type),
@@ -138,10 +134,12 @@ sri_data_clean <- sri_data %>%
       .cols = c(d1a_housing_score:hh_sri_total_score),
       .fns = as.numeric
     )) %>%
+  # Clean time_in_country variable
   mutate(
     time_in_country = str_replace(time_in_country, "año", "Year"),
     time_in_country = na_if(time_in_country, "No Aplica")
   ) %>%
+  # Clean enumerator names
   mutate(
     nombre_del_evaluador = tolower(nombre_del_evaluador),
     nombre_del_evaluador = str_replace(nombre_del_evaluador, "alexandra lópez", "alexandra lopez"),
@@ -216,11 +214,14 @@ sri_data_clean <- sri_data %>%
     nombre_del_evaluador = str_replace(nombre_del_evaluador, "briceño ordóñez", "briceno ordonez"),
     nombre_del_evaluador = str_replace(nombre_del_evaluador, "pazmiño", "pazmino")
   ) %>%
+  # Shorten date variable name
   rename(fecha_encuesta = fecha_de_la_evaluacion) %>%
+  # Clean codigo variable
   mutate(
     codigo = tolower(codigo),
     codigo = str_remove(codigo, "-"),
-    codigo = str_remove(codigo, " ")
+    codigo = str_remove(codigo, " "),
+    codigo = str_remove(codigo, ":")
   )
   
 
@@ -255,10 +256,12 @@ to_remove <- c("c7988739-c277-4f6e-bc16-9b1c33137c17",
                "df2599a4-74f2-467d-ac65-cddb9abf9e41",
                "3b6e7b62-a6a9-49f7-8ccf-6b6f0e4600e6")
 
+# Quickly remove problematic surveys (fix if Ecuador team has time to review)
 sri_data_clean <- sri_data_clean %>%
   filter(!(uuid %in% to_remove))
 sri_data_clean[sri_data_clean$uuid %in% splits, "codigo"] <- replacements
 
+# Add variables for number of times a person is surveyed
 sri_count <- sri_data_clean %>%
   arrange(fecha_encuesta) %>%
   group_by(codigo) %>%
@@ -272,8 +275,7 @@ sri_count <- sri_data_clean %>%
     in_program = count > 1
   )
 
-
-
+# Create list of ids where surveys conducted after very short interval
 ids_twos <- sri_count %>%
   filter(count == 2) %>%
   select(codigo, position, fecha_encuesta) %>%
@@ -282,17 +284,40 @@ ids_twos <- sri_count %>%
   filter(days_diff < 60) %>%
   pull(codigo)
 
+# Create dataframe of problematic surveys to share with Ecaudor team
 issues <- c("EC-0045255", "EC-0047632", "EC-0083024", "EC-0090595",
             "EC-0091882","EC-0092443", "Integra196", "Integra470", "Integra156",
             ids_twos)
 
-
-sri_count %>%
+sri_problems <- sri_count %>%
   arrange(codigo, fecha_encuesta) %>%
-  filter(codigo %in% issues) %>%
-  write_csv("ec_output.csv")
+  filter(codigo %in% issues)
 
+# Create wide dataset to calculate sri_change variable (ie, from BL to EL)
+first_and_last <- sri_count %>%
+  filter(
+    count > 1,
+    measure_prop == .25 | measure_prop == 1/3 | measure_prop == 1 | position == 1
+  )
 
+post_tests <- first_and_last %>%
+  filter(position != 1) %>%
+  select(codigo, fecha_post = fecha_encuesta,
+         sri_post = hh_sri_total_score)
+
+sri_wide <- first_and_last %>%
+  filter(position == 1) %>%
+  left_join(post_tests, by = "codigo") %>%
+  mutate(
+    time_period = as.numeric(fecha_post - fecha_encuesta),
+    sri_change = sri_post - hh_sri_total_score
+  )
+
+# Save datasets to CSV (note, Spanish characters do not save well)
+write_csv(sri_count, "sri_count.csv")
+write_csv(sri_wide, "sri_wide.csv")
+
+# Ad hoc graphs and analysis
 sri_count %>%
   ggplot(aes(x = fecha_encuesta, y = hh_sri_total_score)) +
   geom_point(aes(color = project), alpha = .5) +
@@ -334,29 +359,6 @@ sri_count %>%
     alpha = .3
   ) +
   geom_line(aes(group = codigo), alpha = .1)
-
-# Create wide dataset
-first_and_last <- sri_count %>%
-  filter(
-    count > 1,
-    measure_prop == .25 | measure_prop == 1/3 | measure_prop == 1 | position == 1
-  )
-
-post_tests <- first_and_last %>%
-  filter(position != 1) %>%
-  select(codigo, fecha_post = fecha_encuesta,
-         sri_post = hh_sri_total_score)
-
-sri_wide <- first_and_last %>%
-  filter(position == 1) %>%
-  left_join(post_tests, by = "codigo") %>%
-  mutate(
-    time_period = as.numeric(fecha_post - fecha_encuesta),
-    sri_change = sri_post - hh_sri_total_score
-  )
-
-write_csv(sri_count, "sri_count.csv")
-write_csv(sri_wide, "sri_wide.csv")
 
 # Regression on wide data
 mod <- lm(
