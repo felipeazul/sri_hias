@@ -317,6 +317,22 @@ sri_wide <- first_and_last %>%
 write_csv(sri_count, "sri_count.csv")
 write_csv(sri_wide, "sri_wide.csv")
 
+# Merge MDG variables
+mdg <- read_xlsx("./01_data/raw/SeguimientoMDGDetallado.xlsx") %>%
+  janitor::clean_names() %>%
+  rename(codigo = numero_de_caso) %>%
+  select(codigo, modelo_de_graduacion_ficha_de_datos_generales,
+         valor_recibido_hasta_el_momento)
+  
+sri_wide_2 <- sri_wide %>%
+  mutate(codigo = str_replace(codigo, "ec", "EC-")) %>%
+  left_join(mdg, by = "codigo")
+
+
+mdg<-rename.variable(mdg,"numero_de_caso","codigo")
+mdg<-select(mdg,codigo, modelo_de_graduacion_ficha_de_datos_generales,valor_recibido_hasta_el_momento)
+sri_wide_2<-sri_wide_2%>%left_join(mdg,by="codigo")
+
 # Ad hoc graphs and analysis
 sri_count %>%
   ggplot(aes(x = fecha_encuesta, y = hh_sri_total_score)) +
