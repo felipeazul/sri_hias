@@ -8,6 +8,15 @@ library(lubridate)
 library(janitor)
 library(showtext)
 library(ggdist)
+library(ggsci)
+library(showtext)
+library(ggpubr)
+
+# Fonts
+font_add_google(name = "Open Sans", family = "Open Sans")
+font_add_google(name = "Roboto Mono", family = "Roboto Mono")
+showtext_auto()
+
 
 # Fonts
 font_add_google(name = "Open Sans", family = "Open Sans")
@@ -351,10 +360,54 @@ sri_count %>%
   )
 
 sri_count %>%
-  ggplot(aes(x = hh_sri_total_score, fill = project)) +
+  filter(position == 1) %>%
+  ggplot(aes(x = hh_sri_total_score, fill = in_program)) +
   stat_halfeye() +
-  facet_wrap(~project) +
+  facet_grid(rows = vars(in_program)) +
   theme_minimal()
+
+targeted_mean <- sri_count %>% filter(position == 1, in_program == TRUE) %>% pull(hh_sri_total_score) %>% mean()
+non_targeted_mean <- sri_count %>% filter(position == 1, in_program == FALSE) %>% pull(hh_sri_total_score) %>% mean()
+
+sri_count %>%
+  filter(position == 1) %>%
+  mutate(
+    in_program = case_when(
+      in_program == TRUE ~ "Targeted",
+      in_program == FALSE ~ "Not targeted"
+    )
+  ) %>%
+  ggplot(
+    aes(
+      x = hh_sri_total_score, 
+      y = in_program,
+      colour = in_program
+    )
+  ) +
+  geom_jitter(
+    aes(size = 1.5),
+    alpha = .3,
+    width = .2,
+    height = .2
+  ) +
+  geom_vline(xintercept = targeted_mean) +
+  geom_vline(xintercept = non_targeted_mean) +
+  scale_color_startrek() +
+  scale_fill_startrek() +
+  labs(
+    x = "SRI score",
+    y = NULL
+  ) +
+  theme_minimal(base_size = 18, base_family = "Open Sans") +
+  theme(
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    legend.position = "none",
+    axis.title = element_text(size = 12),
+    axis.text = element_text(family = "Roboto Mono", size = 10),
+    plot.caption = element_text(size = 9, color = "gray50"),
+    panel.grid.minor = element_blank(),
+    plot.background = element_rect(fill = "grey97", color = NA),
+  )
 
 sri_count %>%
   filter(count == 2) %>%
@@ -364,6 +417,12 @@ sri_count %>%
     n()
   )
 
+# Cut the tails
+sri_count %>%
+  filter(position == 1) %>%
+  arrange(hh_sri_total_score) %>%
+  slice(round(1442/100):round(1442/100*99)) %>%
+  glimpse()
 
 sri_count %>%
   ggplot(aes(
