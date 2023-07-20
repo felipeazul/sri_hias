@@ -17,12 +17,6 @@ font_add_google(name = "Open Sans", family = "Open Sans")
 font_add_google(name = "Roboto Mono", family = "Roboto Mono")
 showtext_auto()
 
-
-# Fonts
-font_add_google(name = "Open Sans", family = "Open Sans")
-font_add_google(name = "Roboto Mono", family = "Roboto Mono")
-showtext_auto()
-
 # Load raw data
 prm_raw <- read_excel("./01_data/raw/sri_prm_ecuador.xlsx")
 hilton_raw <- read_excel("./01_data/raw/sri_hilton_ecuador.xlsx")
@@ -385,13 +379,13 @@ sri_count %>%
     )
   ) +
   geom_jitter(
-    aes(size = 1.5),
-    alpha = .3,
+    aes(size = 1),
+    alpha = .2,
     width = .2,
     height = .2
   ) +
-  geom_vline(xintercept = targeted_mean) +
-  geom_vline(xintercept = non_targeted_mean) +
+  geom_vline(xintercept = targeted_mean, colour = "blue") +
+  geom_vline(xintercept = non_targeted_mean, colour = "red") +
   scale_color_startrek() +
   scale_fill_startrek() +
   labs(
